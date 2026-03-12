@@ -9,6 +9,7 @@ export interface CreateContractInput {
   tenantId: string
   startDate?: string
   endDate?: string
+  occupancyType?: Contract['occupancyType']
   monthlyRent?: number
   depositAmount?: number
   paymentDueDay: number
@@ -56,6 +57,7 @@ export const contractRepository = {
       }
 
       const timestamp = nowIso()
+      const occupancyType = input.occupancyType ?? room.occupancyType
 
       const contract: Contract = {
         id: createId('contract'),
@@ -64,6 +66,7 @@ export const contractRepository = {
         contractNo: createContractNo(database.contracts.length),
         startDate,
         endDate,
+        occupancyType,
         monthlyRent: input.monthlyRent ?? room.monthlyRent,
         depositAmount: input.depositAmount ?? room.depositAmount,
         paymentDueDay: input.paymentDueDay,
@@ -79,6 +82,9 @@ export const contractRepository = {
         room.status = nextRoomStatus
         room.updatedAt = timestamp
       }
+
+      room.occupancyType = occupancyType
+      room.updatedAt = timestamp
 
       return { ...contract }
     })

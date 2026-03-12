@@ -90,6 +90,7 @@ function createContract(
   contractNo: string,
   startDate: string,
   endDate: string,
+  occupancyType: OccupancyType,
   monthlyRent: number,
   paymentDueDay: number,
   status: ContractStatus,
@@ -102,6 +103,7 @@ function createContract(
     contractNo,
     startDate,
     endDate,
+    occupancyType,
     monthlyRent,
     depositAmount: monthlyRent * 2,
     paymentDueDay,
@@ -270,16 +272,16 @@ export function createSeedDatabase(): AppDatabase {
   ]
 
   const contracts: Contract[] = [
-    createContract('contract-001', 'room-101', 'tenant-001', 'CT-2025-001', '2025-09-01', '2026-08-31', 4800, 5, ContractStatus.ACTIVE, now),
-    createContract('contract-002', 'room-102', 'tenant-002', 'CT-2025-002', '2025-10-01', '2026-09-30', 4900, 5, ContractStatus.ACTIVE, now),
-    createContract('contract-003', 'room-107', 'tenant-003', 'CT-2025-003', '2025-11-01', '2026-10-31', 5200, 5, ContractStatus.ACTIVE, now),
-    createContract('contract-004', 'room-108', 'tenant-004', 'CT-2025-004', '2025-07-01', '2026-06-30', 5200, 5, ContractStatus.PENDING, now),
-    createContract('contract-005', 'room-201', 'tenant-005', 'CT-2025-005', '2025-09-15', '2026-09-14', 5900, 5, ContractStatus.ACTIVE, now),
-    createContract('contract-006', 'room-202', 'tenant-006', 'CT-2025-006', '2025-08-01', '2026-07-31', 6000, 5, ContractStatus.ACTIVE, now),
-    createContract('contract-007', 'room-205', 'tenant-007', 'CT-2025-007', '2025-10-20', '2026-10-19', 6200, 5, ContractStatus.ACTIVE, now),
-    createContract('contract-008', 'room-206', 'tenant-008', 'CT-2025-008', '2025-11-15', '2026-11-14', 6200, 5, ContractStatus.ACTIVE, now),
-    createContract('contract-009', 'room-208', 'tenant-009', 'CT-2025-009', '2025-09-10', '2026-09-09', 6300, 5, ContractStatus.ACTIVE, now),
-    createContract('contract-010', 'room-104', 'tenant-010', 'CT-2024-010', '2024-01-01', '2024-12-31', 5000, 5, ContractStatus.EXPIRED, now),
+    createContract('contract-001', 'room-101', 'tenant-001', 'CT-2025-001', '2025-09-01', '2026-08-31', OccupancyType.MONTHLY, 4800, 5, ContractStatus.ACTIVE, now),
+    createContract('contract-002', 'room-102', 'tenant-002', 'CT-2025-002', '2025-10-01', '2026-09-30', OccupancyType.MONTHLY, 4900, 5, ContractStatus.ACTIVE, now),
+    createContract('contract-003', 'room-107', 'tenant-003', 'CT-2025-003', '2025-11-01', '2026-10-31', OccupancyType.MONTHLY, 5200, 5, ContractStatus.ACTIVE, now),
+    createContract('contract-004', 'room-108', 'tenant-004', 'CT-2025-004', '2025-07-01', '2026-06-30', OccupancyType.MONTHLY, 5200, 5, ContractStatus.PENDING, now),
+    createContract('contract-005', 'room-201', 'tenant-005', 'CT-2025-005', '2025-09-15', '2026-09-14', OccupancyType.MONTHLY, 5900, 5, ContractStatus.ACTIVE, now),
+    createContract('contract-006', 'room-202', 'tenant-006', 'CT-2025-006', '2025-08-01', '2026-07-31', OccupancyType.MONTHLY, 6000, 5, ContractStatus.ACTIVE, now),
+    createContract('contract-007', 'room-205', 'tenant-007', 'CT-2025-007', '2025-10-20', '2026-10-19', OccupancyType.MONTHLY, 6200, 5, ContractStatus.ACTIVE, now),
+    createContract('contract-008', 'room-206', 'tenant-008', 'CT-2025-008', '2025-11-15', '2026-11-14', OccupancyType.MONTHLY, 6200, 5, ContractStatus.ACTIVE, now),
+    createContract('contract-009', 'room-208', 'tenant-009', 'CT-2025-009', '2025-09-10', '2026-09-09', OccupancyType.MONTHLY, 6300, 5, ContractStatus.ACTIVE, now),
+    createContract('contract-010', 'room-104', 'tenant-010', 'CT-2024-010', '2024-01-01', '2024-12-31', OccupancyType.DAILY, 5000, 5, ContractStatus.EXPIRED, now),
   ]
 
   const reservations: Reservation[] = [
@@ -596,7 +598,7 @@ export function createSeedDatabase(): AppDatabase {
     users,
     settings,
     meta: {
-      version: 2,
+      version: 4,
       seededAt: now,
       updatedAt: now,
     },
