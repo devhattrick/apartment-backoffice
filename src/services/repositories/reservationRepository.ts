@@ -129,6 +129,7 @@ export const reservationRepository = {
         contractNo: createContractNo(database.contracts.length),
         startDate,
         endDate,
+        occupancyType: room.occupancyType,
         monthlyRent: room.monthlyRent,
         depositAmount: room.depositAmount,
         paymentDueDay,

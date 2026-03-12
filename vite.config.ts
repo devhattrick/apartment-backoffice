@@ -7,7 +7,10 @@ const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.met
   version?: string
 }
 
+const basePath = process.env.VITE_BASE_PATH ?? '/'
+
 export default defineConfig({
+  base: basePath,
   plugins: [react(), tailwindcss()],
   define: {
     __APP_VERSION__: JSON.stringify(packageJson.version ?? '0.0.0'),

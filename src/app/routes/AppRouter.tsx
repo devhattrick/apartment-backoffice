@@ -5,8 +5,10 @@ import { CatchAllRedirect, ProtectedRoute, PublicOnlyRoute } from './RouteGuards
 import { appRoutes, defaultAuthedRoute } from './routeConfig'
 
 export function AppRouter() {
+  const basename = import.meta.env.BASE_URL.replace(/\/+$/, '')
+
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={basename === '' ? undefined : basename}>
       <Routes>
         <Route
           path="/login"

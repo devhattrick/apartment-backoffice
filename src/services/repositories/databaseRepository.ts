@@ -1,10 +1,10 @@
 import { createSeedDatabase } from '../../data/seedDatabase'
 import { STORAGE_KEYS } from '../../constants/storageKeys'
-import { OccupancyType, type AppDatabase } from '../../types'
+import { ContractStatus, OccupancyType, type AppDatabase } from '../../types'
 import { nowIso } from '../../utils/date'
 import { storageService } from '../storage/storageService'
 
-const DATABASE_VERSION = 2
+const DATABASE_VERSION = 4
 
 function deepClone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T
@@ -44,30 +44,84 @@ function migrateDatabase(database: AppDatabase): AppDatabase {
   }
 
   const timestamp = nowIso()
+  let nextDatabase = database
 
-  if (database.meta.version === 1) {
-    return {
-      ...database,
-      rooms: database.rooms.map((room) => ({
+  if (nextDatabase.meta.version < 2) {
+    nextDatabase = {
+      ...nextDatabase,
+      rooms: nextDatabase.rooms.map((room) => ({
         ...room,
         occupancyType: room.occupancyType ?? OccupancyType.MONTHLY,
       })),
       meta: {
-        ...database.meta,
-        version: DATABASE_VERSION,
+        ...nextDatabase.meta,
+        version: 2,
         updatedAt: timestamp,
       },
     }
   }
 
-  return {
-    ...database,
-    meta: {
-      ...database.meta,
-      version: DATABASE_VERSION,
-      updatedAt: timestamp,
-    },
+  if (nextDatabase.meta.version < 3) {
+    const roomOccupancyTypeMap = new Map(
+      nextDatabase.rooms.map((room) => [room.id, room.occupancyType ?? OccupancyType.MONTHLY]),
+    )
+
+    nextDatabase = {
+      ...nextDatabase,
+      contracts: nextDatabase.contracts.map((contract) => ({
+        ...contract,
+        occupancyType:
+          contract.occupancyType ??
+          roomOccupancyTypeMap.get(contract.roomId) ??
+          OccupancyType.MONTHLY,
+      })),
+      meta: {
+        ...nextDatabase.meta,
+        version: 3,
+        updatedAt: timestamp,
+      },
+    }
   }
+
+  if (nextDatabase.meta.version < 4) {
+    const latestActiveContractByRoom = new Map<string, (typeof nextDatabase.contracts)[number]>()
+    const sortedContracts = [...nextDatabase.contracts].sort((a, b) =>
+      b.startDate.localeCompare(a.startDate) || b.createdAt.localeCompare(a.createdAt),
+    )
+
+    sortedContracts.forEach((contract) => {
+      if (contract.status !== ContractStatus.ACTIVE && contract.status !== ContractStatus.PENDING) {
+        return
+      }
+
+      if (!latestActiveContractByRoom.has(contract.roomId)) {
+        latestActiveContractByRoom.set(contract.roomId, contract)
+      }
+    })
+
+    nextDatabase = {
+      ...nextDatabase,
+      rooms: nextDatabase.rooms.map((room) => {
+        const contract = latestActiveContractByRoom.get(room.id)
+
+        if (!contract) {
+          return room
+        }
+
+        return {
+          ...room,
+          occupancyType: contract.occupancyType ?? room.occupancyType ?? OccupancyType.MONTHLY,
+        }
+      }),
+      meta: {
+        ...nextDatabase.meta,
+        version: 4,
+        updatedAt: timestamp,
+      },
+    }
+  }
+
+  return nextDatabase
 }
 
 function readRawDatabase(): AppDatabase {

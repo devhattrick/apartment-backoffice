@@ -63,6 +63,7 @@ export interface Contract {
   contractNo: string
   startDate: ISODateString
   endDate: ISODateString
+  occupancyType: OccupancyType
   monthlyRent: number
   depositAmount: number
   paymentDueDay: number

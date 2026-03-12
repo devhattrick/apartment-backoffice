@@ -20,7 +20,7 @@ import { occupancyTypeLabel, roomStatusLabel, roomStatusTransitions } from '../.
 import { StatusChip } from '../../../components/status/StatusChip'
 import { useI18n } from '../../../i18n/useI18n'
 import { databaseRepository, roomRepository } from '../../../services/repositories'
-import { PaymentStatus } from '../../../types'
+import { PaymentStatus, RoomStatus as RoomStatusEnum } from '../../../types'
 import type { Billing, Contract, Maintenance, Payment, Room, RoomStatus, Tenant } from '../../../types'
 import { formatDate } from '../../../utils/date'
 import { formatCurrency } from '../../../utils/formatters'
@@ -119,7 +119,18 @@ export function RoomDetailPage() {
               {t('Floor')} {room.floor} | {room.type}
             </Typography>
           </div>
-          <StatusChip status={room.status} size="medium" />
+          <Stack spacing={1} alignItems={{ xs: 'flex-start', sm: 'flex-end' }}>
+            <StatusChip status={room.status} size="medium" />
+            {room.status === RoomStatusEnum.AVAILABLE && (
+              <Button
+                variant="contained"
+                size="small"
+                onClick={() => navigate(`/contracts?openCreate=1&roomId=${room.id}`)}
+              >
+                {t('Create Contract')}
+              </Button>
+            )}
+          </Stack>
         </Stack>
 
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mt: 2 }}>

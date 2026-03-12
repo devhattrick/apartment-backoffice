@@ -18,15 +18,15 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
-import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { contractStatusOptions } from '../../../constants/options'
-import { contractStatusLabel } from '../../../constants/statusMeta'
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { contractStatusOptions, occupancyTypeOptions } from '../../../constants/options'
+import { contractStatusLabel, occupancyTypeLabel } from '../../../constants/statusMeta'
 import { StatusChip } from '../../../components/status/StatusChip'
 import { useI18n } from '../../../i18n/useI18n'
 import { contractRepository, databaseRepository, tenantRepository } from '../../../services/repositories'
-import type { Contract, ContractStatus, Room, Tenant } from '../../../types'
-import { ContractStatus as ContractStatusEnum, RoomStatus } from '../../../types'
+import type { Contract, ContractStatus, OccupancyType, Room, Tenant } from '../../../types'
+import { ContractStatus as ContractStatusEnum, OccupancyType as OccupancyTypeEnum, RoomStatus } from '../../../types'
 import { addYears, todayIsoDate } from '../../../utils/date'
 import { formatCurrency } from '../../../utils/formatters'
 
@@ -35,6 +35,7 @@ interface ContractDraft {
   tenantId: string
   startDate: string
   endDate: string
+  occupancyType: OccupancyType
   paymentDueDay: number
   status: ContractStatus
 }
@@ -68,14 +69,18 @@ const initialNewTenantDraft: NewTenantDraft = {
 export function ContractListPage() {
   const { t } = useI18n()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const initialSnapshot = databaseRepository.getSnapshot()
+  const preselectedRoomId = searchParams.get('roomId') ?? ''
+  const shouldOpenCreateDialog = searchParams.get('openCreate') === '1'
+  const preselectedRoom = initialSnapshot.rooms.find((room) => room.id === preselectedRoomId) ?? null
 
   const [contracts, setContracts] = useState<Contract[]>(() => contractRepository.getAll())
   const [rooms, setRooms] = useState<Room[]>(() => initialSnapshot.rooms)
   const [tenants, setTenants] = useState<Tenant[]>(() => initialSnapshot.tenants)
   const [statusFilter, setStatusFilter] = useState<'ALL' | ContractStatus>('ALL')
 
-  const [openCreateDialog, setOpenCreateDialog] = useState(false)
+  const [openCreateDialog, setOpenCreateDialog] = useState(shouldOpenCreateDialog)
   const [openRenewDialog, setOpenRenewDialog] = useState(false)
   const [selectedContractId, setSelectedContractId] = useState<string>('')
   const [renewEndDate, setRenewEndDate] = useState(addYears(todayIsoDate(), 1))
@@ -83,13 +88,25 @@ export function ContractListPage() {
   const [newTenantDraft, setNewTenantDraft] = useState<NewTenantDraft>(initialNewTenantDraft)
 
   const [draft, setDraft] = useState<ContractDraft>({
-    roomId: '',
+    roomId: preselectedRoom?.id ?? '',
     tenantId: '',
     startDate: todayIsoDate(),
     endDate: addYears(todayIsoDate(), 1),
+    occupancyType: preselectedRoom?.occupancyType ?? OccupancyTypeEnum.MONTHLY,
     paymentDueDay: initialSnapshot.settings.billingDueDay,
     status: ContractStatusEnum.ACTIVE,
   })
+
+  useEffect(() => {
+    if (!shouldOpenCreateDialog && !preselectedRoomId) {
+      return
+    }
+
+    const nextSearchParams = new URLSearchParams(searchParams)
+    nextSearchParams.delete('openCreate')
+    nextSearchParams.delete('roomId')
+    setSearchParams(nextSearchParams, { replace: true })
+  }, [preselectedRoomId, searchParams, setSearchParams, shouldOpenCreateDialog])
 
   const loadData = () => {
     const snapshot = databaseRepository.getSnapshot()
@@ -119,6 +136,7 @@ export function ContractListPage() {
       tenantId: '',
       startDate: todayIsoDate(),
       endDate: addYears(todayIsoDate(), 1),
+      occupancyType: OccupancyTypeEnum.MONTHLY,
       paymentDueDay: initialSnapshot.settings.billingDueDay,
       status: ContractStatusEnum.ACTIVE,
     })
@@ -178,6 +196,7 @@ export function ContractListPage() {
               <TableCell>{t('Tenant')}</TableCell>
               <TableCell>{t('Start')}</TableCell>
               <TableCell>{t('End Date')}</TableCell>
+              <TableCell>{t('Occupancy Type')}</TableCell>
               <TableCell align="right">{t('Rent')}</TableCell>
               <TableCell>{t('Status')}</TableCell>
               <TableCell align="right">{t('Action')}</TableCell>
@@ -194,7 +213,11 @@ export function ContractListPage() {
                 })()}</TableCell>
                 <TableCell>{contract.startDate}</TableCell>
                 <TableCell>{contract.endDate}</TableCell>
-                <TableCell align="right">{formatCurrency(contract.monthlyRent)}</TableCell>
+                <TableCell>{t(occupancyTypeLabel[contract.occupancyType])}</TableCell>
+                <TableCell align="right">
+                  {formatCurrency(contract.monthlyRent)}{' '}
+                  {contract.occupancyType === OccupancyTypeEnum.DAILY ? t('per day') : t('per month')}
+                </TableCell>
                 <TableCell>
                   <StatusChip status={contract.status} />
                 </TableCell>
@@ -253,7 +276,15 @@ export function ContractListPage() {
               <Select
                 label={t('Room')}
                 value={draft.roomId}
-                onChange={(event) => setDraft((prev) => ({ ...prev, roomId: event.target.value }))}
+                onChange={(event) => {
+                  const roomId = event.target.value
+                  const room = roomMap.get(roomId)
+                  setDraft((prev) => ({
+                    ...prev,
+                    roomId,
+                    occupancyType: room?.occupancyType ?? prev.occupancyType,
+                  }))
+                }}
               >
                 {availableRooms.map((room) => (
                   <MenuItem key={room.id} value={room.id}>
@@ -415,6 +446,23 @@ export function ContractListPage() {
               InputLabelProps={{ shrink: true }}
             />
 
+            <FormControl size="small" fullWidth>
+              <InputLabel>{t('Occupancy Type')}</InputLabel>
+              <Select
+                label={t('Occupancy Type')}
+                value={draft.occupancyType}
+                onChange={(event) =>
+                  setDraft((prev) => ({ ...prev, occupancyType: event.target.value as OccupancyType }))
+                }
+              >
+                {occupancyTypeOptions.map((occupancyType) => (
+                  <MenuItem key={occupancyType} value={occupancyType}>
+                    {t(occupancyTypeLabel[occupancyType])}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
             <TextField
               type="number"
               label={t('Payment Due Day')}
@@ -480,6 +528,7 @@ export function ContractListPage() {
                 tenantId,
                 startDate: draft.startDate,
                 endDate: draft.endDate,
+                occupancyType: draft.occupancyType,
                 paymentDueDay: draft.paymentDueDay,
                 status: draft.status,
               })

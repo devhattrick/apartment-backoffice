@@ -101,6 +101,10 @@ export function RoomListPage() {
     loadRooms()
   }
 
+  const openRoomAction = (room: Room) => {
+    navigate(`/rooms/${room.id}`)
+  }
+
   return (
     <Stack spacing={3}>
       <Paper sx={{ p: { xs: 2.5, sm: 3 } }}>
@@ -231,7 +235,7 @@ export function RoomListPage() {
                     </FormControl>
                   </TableCell>
                   <TableCell align="right">
-                    <Button size="small" onClick={() => navigate(`/rooms/${room.id}`)}>
+                    <Button size="small" onClick={() => openRoomAction(room)}>
                       {t('View')}
                     </Button>
                   </TableCell>
@@ -277,7 +281,7 @@ export function RoomListPage() {
                   </Select>
                 </FormControl>
 
-                <Button variant="outlined" size="small" onClick={() => navigate(`/rooms/${room.id}`)}>
+                <Button variant="outlined" size="small" onClick={() => openRoomAction(room)}>
                   {t('View Detail')}
                 </Button>
               </Stack>
@@ -345,6 +349,9 @@ export function RoomListPage() {
                       <Typography variant="caption" color="inherit">
                         {t('Status')}: {t(roomStatusLabel[room.status])}
                       </Typography>
+                      <Typography variant="caption" color="inherit">
+                        {t('Action')}: {t('View Detail')}
+                      </Typography>
                     </Stack>
                   )
 
@@ -352,7 +359,7 @@ export function RoomListPage() {
                     <Tooltip key={room.id} title={tooltipContent} arrow placement="top">
                       <Paper
                         component="button"
-                        onClick={() => navigate(`/rooms/${room.id}`)}
+                        onClick={() => openRoomAction(room)}
                         sx={{
                           p: 1.5,
                           border: '1px solid',

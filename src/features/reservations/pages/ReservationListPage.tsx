@@ -23,7 +23,7 @@ import { reservationStatusOptions } from '../../../constants/options'
 import { reservationStatusLabel } from '../../../constants/statusMeta'
 import { StatusChip } from '../../../components/status/StatusChip'
 import { useI18n } from '../../../i18n/useI18n'
-import { databaseRepository, reservationRepository } from '../../../services/repositories'
+import { databaseRepository, reservationRepository, tenantRepository } from '../../../services/repositories'
 import type { Reservation, ReservationStatus, Room, Tenant } from '../../../types'
 import { ReservationStatus as ReservationStatusEnum, RoomStatus } from '../../../types'
 import { todayIsoDate } from '../../../utils/date'
@@ -36,12 +36,38 @@ interface ReservationDraft {
   remark: string
 }
 
+type TenantMode = 'EXISTING' | 'NEW'
+
+interface NewTenantDraft {
+  firstName: string
+  lastName: string
+  phone: string
+  email: string
+  idCardNo: string
+  address: string
+  emergencyContactName: string
+  emergencyContactPhone: string
+  note: string
+}
+
 const initialDraft: ReservationDraft = {
   roomId: '',
   tenantId: '',
   expectedMoveInDate: todayIsoDate(),
   status: ReservationStatusEnum.PENDING,
   remark: '',
+}
+
+const initialNewTenantDraft: NewTenantDraft = {
+  firstName: '',
+  lastName: '',
+  phone: '',
+  email: '',
+  idCardNo: '',
+  address: '',
+  emergencyContactName: '',
+  emergencyContactPhone: '',
+  note: '',
 }
 
 export function ReservationListPage() {
@@ -52,6 +78,8 @@ export function ReservationListPage() {
   const [statusFilter, setStatusFilter] = useState<'ALL' | ReservationStatus>('ALL')
   const [openCreateDialog, setOpenCreateDialog] = useState(false)
   const [draft, setDraft] = useState<ReservationDraft>(initialDraft)
+  const [tenantMode, setTenantMode] = useState<TenantMode>('EXISTING')
+  const [newTenantDraft, setNewTenantDraft] = useState<NewTenantDraft>(initialNewTenantDraft)
 
   const loadData = () => {
     const snapshot = databaseRepository.getSnapshot()
@@ -75,7 +103,19 @@ export function ReservationListPage() {
 
   const resetDraft = () => {
     setDraft(initialDraft)
+    setTenantMode('EXISTING')
+    setNewTenantDraft(initialNewTenantDraft)
   }
+
+  const isNewTenantValid =
+    newTenantDraft.firstName.trim().length > 0 &&
+    newTenantDraft.lastName.trim().length > 0 &&
+    newTenantDraft.phone.trim().length > 0
+
+  const canSaveReservation =
+    draft.roomId.length > 0 &&
+    draft.expectedMoveInDate.length > 0 &&
+    (tenantMode === 'EXISTING' ? draft.tenantId.length > 0 : isNewTenantValid)
 
   return (
     <Stack spacing={3}>
@@ -211,19 +251,138 @@ export function ReservationListPage() {
             </FormControl>
 
             <FormControl size="small" fullWidth>
-              <InputLabel>{t('Tenant')}</InputLabel>
+              <InputLabel>{t('Tenant Type')}</InputLabel>
               <Select
-                label={t('Tenant')}
-                value={draft.tenantId}
-                onChange={(event) => setDraft((prev) => ({ ...prev, tenantId: event.target.value }))}
+                label={t('Tenant Type')}
+                value={tenantMode}
+                onChange={(event) => setTenantMode(event.target.value as TenantMode)}
               >
-                {tenants.map((tenant) => (
-                  <MenuItem key={tenant.id} value={tenant.id}>
-                    {tenant.firstName} {tenant.lastName}
-                  </MenuItem>
-                ))}
+                <MenuItem value="EXISTING">{t('Select Existing Tenant')}</MenuItem>
+                <MenuItem value="NEW">{t('Create New Tenant')}</MenuItem>
               </Select>
             </FormControl>
+
+            {tenantMode === 'EXISTING' ? (
+              <FormControl size="small" fullWidth>
+                <InputLabel>{t('Tenant')}</InputLabel>
+                <Select
+                  label={t('Tenant')}
+                  value={draft.tenantId}
+                  onChange={(event) => setDraft((prev) => ({ ...prev, tenantId: event.target.value }))}
+                >
+                  {tenants.map((tenant) => (
+                    <MenuItem key={tenant.id} value={tenant.id}>
+                      {tenant.firstName} {tenant.lastName}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            ) : (
+              <Stack spacing={1.25}>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25}>
+                  <TextField
+                    required
+                    size="small"
+                    label={t('First Name')}
+                    value={newTenantDraft.firstName}
+                    onChange={(event) =>
+                      setNewTenantDraft((prev) => ({ ...prev, firstName: event.target.value }))
+                    }
+                    fullWidth
+                  />
+                  <TextField
+                    required
+                    size="small"
+                    label={t('Last Name')}
+                    value={newTenantDraft.lastName}
+                    onChange={(event) =>
+                      setNewTenantDraft((prev) => ({ ...prev, lastName: event.target.value }))
+                    }
+                    fullWidth
+                  />
+                </Stack>
+
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25}>
+                  <TextField
+                    required
+                    size="small"
+                    label={t('Phone')}
+                    value={newTenantDraft.phone}
+                    onChange={(event) =>
+                      setNewTenantDraft((prev) => ({ ...prev, phone: event.target.value }))
+                    }
+                    fullWidth
+                  />
+                  <TextField
+                    size="small"
+                    label={t('Email')}
+                    value={newTenantDraft.email}
+                    onChange={(event) =>
+                      setNewTenantDraft((prev) => ({ ...prev, email: event.target.value }))
+                    }
+                    fullWidth
+                  />
+                </Stack>
+
+                <TextField
+                  size="small"
+                  label={t('ID Card')}
+                  value={newTenantDraft.idCardNo}
+                  onChange={(event) =>
+                    setNewTenantDraft((prev) => ({ ...prev, idCardNo: event.target.value }))
+                  }
+                />
+
+                <TextField
+                  size="small"
+                  label={t('Address')}
+                  value={newTenantDraft.address}
+                  onChange={(event) =>
+                    setNewTenantDraft((prev) => ({ ...prev, address: event.target.value }))
+                  }
+                  multiline
+                  minRows={2}
+                />
+
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25}>
+                  <TextField
+                    size="small"
+                    label={t('Emergency Contact Name')}
+                    value={newTenantDraft.emergencyContactName}
+                    onChange={(event) =>
+                      setNewTenantDraft((prev) => ({
+                        ...prev,
+                        emergencyContactName: event.target.value,
+                      }))
+                    }
+                    fullWidth
+                  />
+                  <TextField
+                    size="small"
+                    label={t('Emergency Contact Phone')}
+                    value={newTenantDraft.emergencyContactPhone}
+                    onChange={(event) =>
+                      setNewTenantDraft((prev) => ({
+                        ...prev,
+                        emergencyContactPhone: event.target.value,
+                      }))
+                    }
+                    fullWidth
+                  />
+                </Stack>
+
+                <TextField
+                  size="small"
+                  label={t('Note')}
+                  value={newTenantDraft.note}
+                  onChange={(event) =>
+                    setNewTenantDraft((prev) => ({ ...prev, note: event.target.value }))
+                  }
+                  multiline
+                  minRows={2}
+                />
+              </Stack>
+            )}
 
             <TextField
               type="date"
@@ -276,11 +435,32 @@ export function ReservationListPage() {
           </Button>
           <Button
             variant="contained"
-            disabled={!draft.roomId || !draft.tenantId || !draft.expectedMoveInDate}
+            disabled={!canSaveReservation}
             onClick={() => {
+              let tenantId = draft.tenantId
+
+              if (tenantMode === 'NEW') {
+                const createdTenant = tenantRepository.create({
+                  firstName: newTenantDraft.firstName,
+                  lastName: newTenantDraft.lastName,
+                  phone: newTenantDraft.phone,
+                  email: newTenantDraft.email,
+                  idCardNo: newTenantDraft.idCardNo,
+                  address: newTenantDraft.address,
+                  emergencyContactName: newTenantDraft.emergencyContactName,
+                  emergencyContactPhone: newTenantDraft.emergencyContactPhone,
+                  note: newTenantDraft.note,
+                })
+                tenantId = createdTenant.id
+              }
+
+              if (!tenantId) {
+                return
+              }
+
               reservationRepository.create({
                 roomId: draft.roomId,
-                tenantId: draft.tenantId,
+                tenantId,
                 expectedMoveInDate: draft.expectedMoveInDate,
                 status: draft.status,
                 remark: draft.remark,
