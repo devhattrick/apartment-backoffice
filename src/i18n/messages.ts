@@ -43,6 +43,7 @@ export const TH_MESSAGES: Record<string, string> = {
   Login: 'เข้าสู่ระบบ',
   'Mock auth for Step 1: any non-empty username and password can sign in.':
     'ระบบล็อกอินจำลองสำหรับ Step 1: กรอกชื่อผู้ใช้และรหัสผ่านที่ไม่ว่างก็เข้าได้',
+  Version: 'เวอร์ชัน',
   'Snapshot from local mock database. Every module updates this dashboard automatically.':
     'ภาพรวมจากฐานข้อมูลจำลองในเครื่อง ทุกโมดูลอัปเดตแดชบอร์ดนี้อัตโนมัติ',
   'Total Rooms': 'จำนวนห้องทั้งหมด',

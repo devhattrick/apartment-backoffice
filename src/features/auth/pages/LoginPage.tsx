@@ -120,6 +120,9 @@ export function LoginPage() {
             <Typography variant="caption" color="text.secondary">
               {t('Mock auth for Step 1: any non-empty username and password can sign in.')}
             </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {t('Version')} {__APP_VERSION__}
+            </Typography>
           </Stack>
         </Paper>
       </Container>
